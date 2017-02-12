@@ -3,9 +3,20 @@ Example of a REST API
 
 ## Usage
 
+To run standaline, use any one of the following
 
+    node main.js
+    npm run start
 
+To run with docker, use any one of the following
 
+    ./run.sh
+    npm run docker
+
+To run tests, use any one of the following
+
+    ./run test
+    npm run test
 
 ## API
 

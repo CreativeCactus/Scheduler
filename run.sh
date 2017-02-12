@@ -10,6 +10,7 @@ clean(){
 #Clean up
 clean
 docker wait Scheduler-App &>/dev/null
+sleep 5
 
 #Start the app in a container
 #Note sh -c allows ^C to kill
@@ -31,6 +32,8 @@ do
     fi
 done
 
+echo ""
+
 if [ $active != 1 ]; then
     echo "Timed out pinging container"
     clean
@@ -39,7 +42,7 @@ fi
 
 #Test if called with option
 if [[ $1 = "test" ]]; then
-    docker exec -it Scheduler-App node ./e2e.js
+    docker exec -i Scheduler-App node ./e2e.js
     clean
 else 
     wait
@@ -47,3 +50,4 @@ fi
 
 #Done
 clean
+exit 0

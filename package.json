@@ -4,7 +4,9 @@
   "description": "Simple API for a task schedule",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./run.sh test",
+    "docker": "./run.sh",
+    "start": "node main.js"
   },
   "repository": {
     "type": "git",
