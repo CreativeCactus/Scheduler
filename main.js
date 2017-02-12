@@ -1,13 +1,13 @@
 'use strict';
 /* Config -------------------------------------------------------------------*/
 
-const PORT = process.env.PORT||8080
-const nMinsBetweenAlertChecks = 1
-const nMINS = 1000*60*nMinsBetweenAlertChecks
+const PORT = process.env.PORT||8080;
+const nMinsBetweenAlertChecks = 1;
+const nMINS = 1000*60*nMinsBetweenAlertChecks;
 
 console.log(`NOTE: API running with check frequency of ${nMinsBetweenAlertChecks} mins
 Longer time between checks will improve performance, 
-but you will not be able to safely add alerts before ${nMinsBetweenAlertChecks*2} mins in the future.`)
+but you will not be able to safely add alerts before ${nMinsBetweenAlertChecks*2} mins in the future.`);
 
 /* Requires & Init ----------------------------------------------------------*/
 
@@ -28,7 +28,7 @@ let express = require('express')
 app.use(bodyParser.json());
 
 app.listen(PORT,function(){
-    console.log(`Listening on http://127.0.0.1:${PORT}/`)
+    console.log(`Listening on http://127.0.0.1:${PORT}/`);
 })
 
 /* API Authentication & Middleware ------------------------------------------*/
@@ -38,31 +38,29 @@ app.use(function (req, res, next){
     //path = require('path')
     //res.status(403).send(path.join(__dirname,"403.json")
     /* Authenticated */
-    next()
+    next();
 })
 
 app.use(function (err, req, res, next) {
-  console.error(err.stack)
-  res.status(500).send('Something broke!')
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 })
 
 function ErrorHandler(cond, code, msg, req, res, log){
-    let stack = new Error().stack
-
     cond=cond?true:false;
-    msg=msg||"Internal error, try again later"
+    msg=msg||"Internal error, try again later";
 
     if(cond){
-        res.status(code)
-        typeof msg == 'string' ? res.send(msg) : res.json(msg)
+        res.status(code);
+        typeof msg == 'string' ? res.send(msg) : res.json(msg);
 
         if(log){
-            console.error(`${log} in ${req.url}`)
-            console.trace(Date.now())
-        }
-    }
+            console.error(`${log} in ${req.url}`);
+            console.trace(Date.now());
+        };
+    };
 
-    return cond
+    return cond;
 }
 
 
@@ -71,9 +69,9 @@ function ErrorHandler(cond, code, msg, req, res, log){
 function ValidateTask(task){
     //Ensure task is named
     if(!task.name)
-        return {err:(res)=>{res.status(400).json({error:"Task requires name"})}}
+        return {err:(res)=>{res.status(400).json({error:"Task requires name"})}};
     
-    task.status=task.status||"active"
+    task.status=task.status||"active";
 
     //Filter the fields
     return {
@@ -81,28 +79,28 @@ function ValidateTask(task){
         desc:task.desc,
         status:task.status,
         id:task.id
-    }
+    };
 }
 
 function ValidateStatus(status,res){
-    let valid = ["active","inactive"]
-    if(valid.indexOf(status)+1) return status
+    let valid = ["active","inactive"];
+    if(valid.indexOf(status)+1) return status;
 
-    return {err:(res)=>{res.status(400).json({error:"Invalid status",valid})}}
+    return {err:(res)=>{res.status(400).json({error:"Invalid status",valid})}};
 }
 
 function FormatTask(task){
     //Add fields
-    task.id=task.id||task._id
-    delete task._id
+    task.id=task.id||task._id;
+    delete task._id;
 
-    task.details_uri_get = `/task/${task.id}`
-    task.remove_uri_delete = `/task/${task.id}`
-    task.update_uri_post = `/task/${task.id}`
-    task.alerts_uri_get = `/task/${task.id}/alerts`
+    task.details_uri_get = `/task/${task.id}`;
+    task.remove_uri_delete = `/task/${task.id}`;
+    task.update_uri_post = `/task/${task.id}`;
+    task.alerts_uri_get = `/task/${task.id}/alerts`;
 
     //Return
-    return task
+    return task;
 }
 
 function FormatTaskList(tasks){
@@ -112,34 +110,34 @@ function FormatTaskList(tasks){
             name:v.name,
             status:v.status,
             id:v.id||v._id
-        }
-    })
+        };
+    });
 
     //Return
-    return tasks
+    return tasks;
 }
 
 function ValidateAlert(alert){
     //Check that related task exists
     if( !alert.task_id )
-        return {err:(res)=>{res.status(400).json({error:"Alert requires valid task_id"})}}
+        return {err:(res)=>{res.status(400).json({error:"Alert requires valid task_id"})}};
 
     //Check that time is valid and in future
     if( !alert.time )
-        return {err:(res)=>{res.status(400).json({error:"Alert requires valid time"})}}
+        return {err:(res)=>{res.status(400).json({error:"Alert requires valid time"})}};
     if( alert.time < Date.now() )
-        return {err:(res)=>{res.status(400).json({error:"Alert requires time after "+Date.now()+2*nMINS})}}
+        return {err:(res)=>{res.status(400).json({error:"Alert requires time after "+Date.now()+2*nMINS})}};
 
-    return alert
+    return alert;
 }
 
 function FormatAlert(alert){
-    alert.id=alert.id||alert._id
-    delete alert._id
-    alert.details_uri_get = `/task/${alert.task_id}/alert/${alert.id}`
-    alert.update_uri_post = `/task/${alert.task_id}/alert/${alert.id}`
-    alert.remove_uri_delete = `/task/${alert.task_id}/alert/${alert.id}`
-    return alert
+    alert.id=alert.id||alert._id;
+    delete alert._id;
+    alert.details_uri_get = `/task/${alert.task_id}/alert/${alert.id}`;
+    alert.update_uri_post = `/task/${alert.task_id}/alert/${alert.id}`;
+    alert.remove_uri_delete = `/task/${alert.task_id}/alert/${alert.id}`;
+    return alert;
 }
 
 function FormatAlertList(alerts){
@@ -148,11 +146,11 @@ function FormatAlertList(alerts){
         return {
             time:v.status,
             id:v.id||v._id
-        }
-    })
+        };
+    });
 
     //Return
-    return alerts
+    return alerts;
 }
 
 /* API Endpoints ------------------------------------------------------------*/
@@ -474,13 +472,13 @@ app.get('/notifications',function (req, res, next){
     //Send JSON reply
     res.status(200).json({ALERTS:PENDING_ALERTS})
     PENDING_ALERTS=[]
-})
+});
 
 /* Scheduled alerts ---------------------------------------------------------*/
 
 //Every 1 minutes, queue up all the upcoming alerts
-queue()
-setInterval(queue,nMINS)
+queue();
+setInterval(queue,nMINS);
 
 function queue(){
     let now = Date.now()
@@ -501,7 +499,7 @@ function queue(){
 
                 if(docs[0].status=='active') setTimeout(schedule_alert, now-docs[i].time, docs[i])
             });
-        }
+        };
     });
 }
 
