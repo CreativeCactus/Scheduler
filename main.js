@@ -1,9 +1,13 @@
 'use strict';
 /* Config -------------------------------------------------------------------*/
 
-const PORT = process.env.PORT||80
+const PORT = process.env.PORT||8080
 const nMinsBetweenAlertChecks = 1
 const nMINS = 1000*60*nMinsBetweenAlertChecks
+
+console.log(`NOTE: API running with check frequency of ${nMinsBetweenAlertChecks} mins
+Longer time between checks will improve performance, 
+but you will not be able to safely add alerts before ${nMinsBetweenAlertChecks*2} mins in the future.`)
 
 /* Requires & Init ----------------------------------------------------------*/
 
@@ -50,7 +54,7 @@ function ErrorHandler(cond, code, msg, req, res, log){
 
     if(cond){
         res.status(code)
-        typeof msg == string ? res.send(msg) : res.json(msg)
+        typeof msg == 'string' ? res.send(msg) : res.json(msg)
 
         if(log){
             console.error(`${log} in ${req.url}`)
@@ -124,12 +128,14 @@ function ValidateAlert(alert){
     if( !alert.time )
         return {err:(res)=>{res.status(400).json({error:"Alert requires valid time"})}}
     if( alert.time < Date.now() )
-        return {err:(res)=>{res.status(400).json({error:"Alert requires time after "+Date.now()})}}
+        return {err:(res)=>{res.status(400).json({error:"Alert requires time after "+Date.now()+2*nMINS})}}
 
     return alert
 }
 
 function FormatAlert(alert){
+    alert.id=alert.id||alert._id
+    delete alert._id
     alert.details_uri_get = `/task/${alert.task_id}/alert/${alert.id}`
     alert.update_uri_post = `/task/${alert.task_id}/alert/${alert.id}`
     alert.remove_uri_delete = `/task/${alert.task_id}/alert/${alert.id}`
@@ -232,7 +238,7 @@ app.post('/task/:id',function (req, res, next){
             err=ErrorHandler(err, 500, null, req, res, `DBError ${err}`)
             if(err) return
 
-            let task=FormatTask(docs[0])
+            task=FormatTask(task)
 
             //Send JSON reply
             res.status(200).send({TASK:task})
@@ -265,11 +271,11 @@ app.delete('/task/:id',function (req, res, next){
     });
 });
 
-//PUT:/tasks/:id/:status
+//PUT:/task/:id/:status
 //Set the status of a task
 //Expects a task ID and valid status
 //Returns success or error
-app.put('/tasks/:id/:status',function (req, res, next){
+app.put('/task/:id/:status',function (req, res, next){
     //Business logic
     let status = ValidateStatus(req.params.status, res)
     if(status.err) return status.err(res)
@@ -281,16 +287,19 @@ app.put('/tasks/:id/:status',function (req, res, next){
         err|=ErrorHandler(docs.length<1, 404, {error:"No such Task"}, req, res)
         if(err) return
 
-        db.Tasks.update({_id:req.params.id}, { status }, {}, function (err, numReplaced) {
+        let task = docs[0]
+        task.status = status
+
+        db.Tasks.update({_id:req.params.id}, task, {}, function (err, numReplaced) {
             //Handle DB Errors
             err=ErrorHandler(err, 500, null, req, res, `DBError ${err}`)
             if(err) return
 
-            let task=FormatTask(docs[0])
+            task=FormatTask(task)
 
             //Send JSON reply
             res.status(200).send({TASK:task})
-        })
+        });
     });
 });
 
@@ -309,7 +318,6 @@ app.get('/task/:id/alerts',function (req, res, next){
         db.Alerts.find({task_id:req.params.id}, function (err, docs){
             //Handle DB Errors
             err=ErrorHandler(err, 500, null, req, res, `DBError ${err}`)
-        err|=ErrorHandler(docs.length<1, 404, {error:"No such Alert"}, req, res)
             if(err) return
 
             let alerts=FormatAlertList(docs)
@@ -327,7 +335,9 @@ app.get('/task/:id/alerts',function (req, res, next){
 app.post('/task/:id/alerts',function (req, res, next){
 
     //Business logic
-    let alert = ValidateAlert(req.body)
+    let alert = req.body
+    alert.task_id = req.params.id
+    alert = ValidateAlert(alert)
     if(alert.err) return alert.err(res)
 
     db.Tasks.find({_id:req.params.id}, function (err, docs){
@@ -337,7 +347,7 @@ app.post('/task/:id/alerts',function (req, res, next){
         err|=ErrorHandler(docs.length<1, 404, {error:"No such Task"}, req, res)
         if(err) return
 
-        db.Alerts.insert(task, function (err, newDoc) {
+        db.Alerts.insert(alert, function (err, newDoc) {
             //Handle DB Errors
             err=ErrorHandler(err, 500, null, req, res, `DBError ${err}`)
             if(err) return
@@ -387,7 +397,9 @@ app.get('/task/:id/alert/:aid',function (req, res, next){
 app.post('/task/:id/alert/:aid',function (req, res, next){
 
     //Business logic
-    let alert = ValidateAlert(req.body)
+    let alert = req.body
+    alert.task_id = req.params.id
+    alert = ValidateAlert(alert)
     if(alert.err) return alert.err(res)
 
     db.Tasks.find({_id:req.params.id}, function (err, docs){
@@ -412,7 +424,7 @@ app.post('/task/:id/alert/:aid',function (req, res, next){
                 err=ErrorHandler(err, 500, null, req, res, `DBError ${err}`)
                 if(err) return
 
-                let alert=FormatAlert(alert)
+                alert=FormatAlert(alert)
 
                 //Send JSON reply
                 res.status(200).send({ALERT:alert})

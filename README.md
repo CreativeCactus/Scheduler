@@ -3,6 +3,8 @@ Example of a REST API
 
 ## Usage
 
+Default port is 8080, or the value of environment variable PORT.
+
 To run standaline, use any one of the following
 
     node main.js
